@@ -10,5 +10,5 @@ A tool to create a big number of users plus applications. This is useful to vali
 [InfrastructureTestCA](https://github.com/Axway-API-Management-Plus/apigw-mgr-testing-tools/tree/master/InfrastructureTestCA) - Shell script for creating an independen, three layer PKI that can be used for end-to-end tests on non-production middleware.
 
 ## AutoSetupApiMgrSystem
-[AutoSetupApiMgrSystem](https://github.com/Axway-API-Management-Plus/apigw-mgr-testing-tools/tree/master/AutoSetupApiMgrSystem) - Scripting approach of installing and auto-configuring a API-Manager system based on a complete, independent API-Gateway topology. Idea is to create an on-demand test-system.
+[AutoSetupApiMgrSystem](https://github.com/Axway-API-Management-Plus/api-gw-mgr-testing-tools/tree/master/AutoSetupApiMgrSystem) - Scripting approach of installing and auto-configuring a API-Manager system based on a complete, independent API-Gateway topology. Idea is to create an on-demand test-system.
 
