@@ -3,7 +3,38 @@
 # All-on-one Demo System Component Installation on a visrtaul server (non docker)
 # ===============================================================================
 # Author:  R. Kiessling, Axway GmbH
-# Changed: 11.11.2019
+# Changed: 13.11.2019
+
+# CLI Parameters
+
+# Version of the Axway API-Gateway Installer Package
+# I will only install server components for Linux here. I assume the client tools run on a remote computer (Windows or Linux)
+# main line versions right now are: 7.5.3 / 7.6.2 / 7.7.0
+for i in "$@"
+do
+case $i in
+    -i=*|--installer-version=*)
+    apimVersion="${i#*=}"
+    shift # past argument=value
+    ;;
+    -d|--debug)
+    DEBUGFLAG="yes"
+    shift # past argument=value
+    ;;
+    *)
+          # unknown option
+    ;;
+esac
+done
+
+# Check parameters
+if [[ -z "$apimVersion" ]]; then
+  printf "ERROR: Needed parameter not provided\n"
+  printf "$0\n"
+  printf "  -i=<version string> | --installer-version=<version string>\n"
+  printf "  -d | --debug\n"
+  exit 1
+fi
 
 # ----------------------------------------------------------------------------
 # Parameters for stand-alone environment (can be adopted for needed topology)
@@ -13,11 +44,6 @@
 # I go for the external JRE here.
 externalJRE=/usr/lib/jvm/jre-1.8.0-openjdk
 
-# Version of the Axway API-Gateway Installer Package
-# I will only install server components for Linux here. I assume the client tools run on a remote computer (Windows or Linux)
-# main line versions right now are: 7.5.3 / 7.6.2 / 7.7.0
-apimVersion=7.6.2
-
 # Installer run file must be on the target system already, along with the license file
 # installation will be within /opt/axwway/<version>
 # for easy handling as symbolic link "current" should be created to the currently used product version
@@ -26,14 +52,14 @@ licenseSourceDir=/opt/axway/installer/${apimVersion}/lic
 installTargetDir=/opt/axway/axway-${apimVersion}
 
 # ADMIN-NODE-MANAGER
-anmHost=apimtest.spdns.de
-anmPort=18090
+anmHost=apimanager.dns.de
+anmPort=8090
 anmDomain="${anmHost//"."/-}"
-anmDomainPassphrase="verysecurepwd"
+anmDomainPassphrase="mypassord"
 anmName="ANM-${anmDomain^^}"
 anmAdminUser="admin"
 anmAdminOotbPassword="changeme"
-anmAdminPassword="mysavepwd"
+anmAdminPassword="mypassord"
 
 # API-GATEWAY for API-MANAGER
 apigwMgrGroup="API-MGR-APIMTEST"
@@ -41,10 +67,10 @@ apigwMgrName="API-MGR-APIMTEST-1"
 apigwMgrServicesPort=8080
 apigwMgrManagementPort=8085
 
-# API-MANAGER Parameters
+# API-MANAGER
 apimDefaultOrg="Guest"
 apimAdminUserName="apiadmin"
-apimAdminUserPass="changeme!"
+apimAdminUserPass="mypassword"
 apimDefaultEmail="admin@apimtest.dns.de"
 apimPortalPort=8075
 apimTrafficPort=8065
@@ -73,11 +99,12 @@ fi
 
 # find Axway installer executable
 if [ -d ${installSourceDir} ]; then
-  axwayInstaller=$( find . -name APIGateway_${apimVersion}_Install_linux*.run )
+  axwayInstaller=$( find . -name APIGateway_${apimVersion:0:3}*_Install_linux*.run )
+  printf "INFO: Axway Installer=${axwayInstaller}\n"
 
-  if [ ! -f ${axwayInstaller} ]; then
+  if [ "X${axwayInstaller}" = "X" ] || [ ! -f "${axwayInstaller}" ]; then
     printf "ERROR: No Axway API-Gateway installer for version ${apimVersion} found at ${installSourceDir}"
-	exit 1
+    exit 1
   else
     chmod u+x ${axwayInstaller}
   fi
@@ -88,12 +115,9 @@ if [ -d ${licenseSourceDir} ]; then
   licenseFile=$( find ${licenseSourceDir} -name "API*${apimVersion:0:3}*.lic" -print0 | xargs -0 grep -l "nondocker" )
   if [ -z "$licenseFile" ]; then
     printf "ERROR: No Axway API-Management Platform license for ${apimVersion} found at ${licenseSourceDir}"
-	exit 1
+    exit 1
   fi
 fi
-
-printf "Axway installer file is ${axwayInstaller}\n"
-printf "Installation directory is file is ${installTargetDir}\n"
 
 # Stop all running API-Management processes
 if pgrep -x "vshell|cassandra|java" >/dev/null; then
@@ -102,6 +126,7 @@ if pgrep -x "vshell|cassandra|java" >/dev/null; then
 fi
 
 # cleanup an older installation of same version
+printf "INFO: Installation directory is ${installTargetDir}\n"
 rm -rf ${installTargetDir}/*
 
 # Install Cassandra 2.2.x binaries from Axway installer; use external OpenJDK v8
@@ -220,17 +245,27 @@ fi
 
 # change advisory banner to point out we are in a DEV/TEST system!
 printf "STEP 5c: Changing advisory banner to advice on TEST system status\n"
-httpStatusCode=$( curl \
+bannerText="{\"bannerEnabled\": true, \"bannerText\": \"API-Management v${apimVersion} TEST system - do NOT use any secret or sensible information here.\"}"
+httpStatusCode=$( printf "${bannerText}" | curl \
 -k -s -o /dev/null -w "%{http_code}" \
 --user "${anmAdminUser}:${anmAdminPassword}" \
 --request PUT \
 --header "Content-Type: application/json" \
---data "{\"bannerEnabled\": true, \"bannerText\": \"API-Management v"${apimVersion}" TEST system - do not use any secret or sensible information here\!\"}" \
+--data @- \
 --url https://${anmHost}:${anmPort}/api/adminusers/advisorybanner )
 
 if [ "$httpStatusCode" -ne "200" ]; then
-  printf '%s\n' "WARNING: API-Gateway Manager UI advisory banner could not be changed."
+  printf '%s\n' "WARNING: API-Gateway Manager UI advisory banner could not be changed. (HTTP status: ${httpStatusCode})"
 fi
+# DEBUG
+printf '%s\n' "${bannerText}"
+printf "${bannerText}" | curl \
+-k -s -o /dev/null -w "%{http_code}" \
+--user "${anmAdminUser}:${anmAdminPassword}" \
+--request PUT \
+--header "Content-Type: application/json" \
+--data @- \
+--url https://${anmHost}:${anmPort}/api/adminusers/advisorybanner
 
 # Opening desired firewall ports (CentOS v7)
 printf "STEP 5d: opening firewall ports\n"
@@ -258,10 +293,18 @@ printf "STEP 6: Registration of API-Gateway group and first instance to host an 
 --instance_services_port=${apigwMgrServicesPort} \
 --instance_management_port=${apigwMgrManagementPort}
 
+if [ $? -ne 0 ]; then
+  printf '%s\n' "ERROR: Failed to register new API-Gateway instance ${apigwMgrName} within group ${apigwMgrGroup}."
+  exit 1
+fi
+printf "    b): starting instance ${apigwMgrName}\n"
+./startinstance -n "${apigwMgrName}" -g "${apigwMgrGroup}" -d
+
 # --------------------------------------
 # API-Gateway for API-Gateway Mockups
 # --------------------------------------
 printf "STEP 7: Registration of API-Gateway group and first instance to host Mockup Services\n"
+printf "    a): registering instance ${apigwGwName}\n"
 
 # register API-Gateway for Mock-Services
 # (API-GW is never diectly accessible from outside; calls must go to an API on API-Manager first to be directed to API-GW Mockup service)
@@ -276,6 +319,14 @@ printf "STEP 7: Registration of API-Gateway group and first instance to host Moc
 --name=${apigwGwName} \
 --instance_services_port=${apigwGwServicesPort} \
 --instance_management_port=${apigwGwManagementPort}
+
+if [ $? -ne 0 ]; then
+  printf '%s\n' "ERROR: Failed to register new API-Gateway instance ${apigwGwName} within group ${apigwGwGroup}."
+  exit 1
+fi
+printf "    b): starting instance ${apigwGwName}\n"
+./startinstance -n "${apigwGwName}" -g "${apigwGwGroup}" -d
+
 
 # --------------------------------------
 # Verifiy Topology
@@ -321,16 +372,24 @@ env.CASSANDRA.SERVER3=localhost
 EOF
 
 printf "STEP 11: start local Apache Cassandra Node now\n"
-../../../cassandra/bin/cassandra -p ../../../cas.pid >> /dev/null
+cd ${installTargetDir}/cassandra/bin
+./cassandra -p ${installTargetDir}/cassandra.pid >> /dev/null
 # now check if process with pid exists (to be sure our cassandra node is running)
 # We need to check if the "local" cassandra server was started. Otherwise another (unwanted) instance might be running.
-ps -p $(cat ../../../cas.pid) >> /dev/null
-if [ $? -ne 0 ]; then
-  printf '%s\n' "ERROR: Desired Apache Cassandra Node is not running! Prehaps another Cassandra node is running instead?"
-  rm -f ../../../cas.pid
+sleep 2
+if [ ! -f ${installTargetDir}/cassandra.pid ]; then
+  printf '%s\n' "ERROR: No cassandra PID file found. Seems the node was not started!"
   exit 1
 fi
 
+ps -p $(cat ${installTargetDir}/cassandra.pid) 2>&1 >> /dev/null
+if [ $? -ne 0 ]; then
+  printf '%s\n' "ERROR: Desired Apache Cassandra Node is not running! Perhaps another Cassandra node is running instead?"
+  rm -f ${installTargetDir}/cassandra.pid
+  exit 1
+fi
+
+cd ${installTargetDir}/apigateway/posix/bin
 # ------------------------------------------------------------------
 # Cancel Installation here - next steps are manual for now!
 # ------------------------------------------------------------------
@@ -342,10 +401,12 @@ printf '%s\n' "  - run setup_apimanager script"
 printf '%s\n' "----------------------------------------------------------------------------"
 
 printf "STEP 13: adding Apache Cassandra Cluster configuration to API-Gateway config (FED)\n"
-printf "         This is not yet implemented!\n"
+printf "         This is not yet implemented! Please manually add it for now!\n"
+
+# EXIT AUTO INSTALLION HERE
 exit 0
 
-printf "STEP 12: adding Apache Cassandra Cluster seed nodes to API-Manager Gateway envSettings.props\n"
+printf "STEP 12: Setup API-Manager on API gateway group ${apigwMgrGroup}\n"
 ./setup-apimanager \
 --username=${anmAdminUser} \
 --password=${anmAdminPassword} \
@@ -466,3 +527,4 @@ printf "STEP 16: restart Admin-Node-Manager after changes to enable metrics sett
 printf "STEP 17: Enable Monitoring within API-Manager GUI via Policy Studio (Server Settings -> API-Manager -> Monitoring)\n"
 
 printf "ALL STEPS COMPLETE\n\n"
+
