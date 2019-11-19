@@ -1,6 +1,6 @@
 <!-- Markdown Reference: https://markdown.de/ or https://github.com/adam-p/markdown-here/wiki/Markdown-Cheatsheet -->
 
-# Health Check for den API-Manager (API-Gateway instances)
+# Health Check for API-Manager (API-Gateway instances)
 
 ## Idea and solution
 
