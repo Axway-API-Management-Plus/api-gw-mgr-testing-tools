@@ -103,7 +103,7 @@ Connection: close
 X-CorrelationID: Id-f51ad45d9205737b2fc75231 0
 Content-Type: application/xml
 
-<status>ok</status>  
+&lt;status>ok&lt;/status>  
 </pre></code>
 
 <pre><code>
