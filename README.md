@@ -12,3 +12,5 @@ A tool to create a big number of users plus applications. This is useful to vali
 ## Automatic Setup of an API-Managwer Test System
 [AutoSetupApiMgrSystem](https://github.com/Axway-API-Management-Plus/api-gw-mgr-testing-tools/tree/master/AutoSetupApiMgrSystem) - Scripting approach of installing and auto-configuring a API-Manager system based on a complete, independent API-Gateway topology. Idea is to create an on-demand test-system.
 
+## API-Manager Platform Health-Check API
+[PlatformHealthCheckAPI](https://github.com/Axway-API-Management-Plus/api-gw-mgr-testing-tools/tree/master/PlatformHealthCheckAPI) - Special API-Manager API to check availability of all needed infrastructure components.

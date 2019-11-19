@@ -1,0 +1,112 @@
+{
+	"frontend": {
+		"apis": [{
+				"id": "9c042c64-21b5-414b-9ef8-642404815827",
+				"organizationId": "8b197be2-aa76-4180-8ca1-7ccba48cd38c",
+				"apiId": "defe57b7-a531-4c4f-b54b-d2bbcf3ed855",
+				"name": "API-Manager-Health-Check",
+				"version": "1.0",
+				"apiRoutingKey": null,
+				"vhost": null,
+				"path": "/platform",
+				"descriptionType": "original",
+				"descriptionManual": null,
+				"descriptionMarkdown": null,
+				"descriptionUrl": null,
+				"summary": "health check on all essential API-Manager components",
+				"retired": false,
+				"expired": false,
+				"image": null,
+				"retirementDate": 0,
+				"deprecated": false,
+				"state": "unpublished",
+				"createdOn": 1573152662994,
+				"createdBy": "461f6dab-4c93-419a-9072-0cb62e2307ea",
+				"corsProfiles": [{
+						"name": "_default",
+						"isDefault": true,
+						"origins": ["*"],
+						"allowedHeaders": [],
+						"exposedHeaders": ["X-CorrelationID"],
+						"supportCredentials": false,
+						"maxAgeSeconds": 0
+					}
+				],
+				"securityProfiles": [{
+						"name": "_default",
+						"isDefault": true,
+						"devices": [{
+								"name": "HTTP Basic",
+								"type": "basic",
+								"order": 1,
+								"properties": {
+									"realm": "apimanager",
+									"removeCredentialsOnSuccess": "true"
+								}
+							}
+						]
+					}
+				],
+				"authenticationProfiles": [{
+						"name": "_default",
+						"isDefault": true,
+						"parameters": {},
+						"type": "none"
+					}
+				],
+				"inboundProfiles": {
+					"_default": {
+						"securityProfile": "_default",
+						"corsProfile": "_default",
+						"monitorAPI": true,
+						"monitorSubject": "authentication.subject.id"
+					}
+				},
+				"outboundProfiles": {
+					"_default": {
+						"authenticationProfile": "_default",
+						"routeType": "policy",
+						"requestPolicy": null,
+						"responsePolicy": null,
+						"routePolicy": "<key type='CircuitContainer'><id field='name' value='API-Manager-Platform'/><key type='CircuitContainer'><id field='name' value='Healthcheck'/><key type='FilterCircuit'><id field='name' value='Health Check API-Gateway'/></key></key></key>",
+						"faultHandlerPolicy": null,
+						"apiId": "defe57b7-a531-4c4f-b54b-d2bbcf3ed855",
+						"apiMethodId": null,
+						"parameters": []
+					}
+				},
+				"serviceProfiles": {},
+				"caCerts": [],
+				"tags": {}
+			}
+		],
+		"methods": [{
+				"id": "96e09697-3750-43d2-ab81-199062380968",
+				"virtualizedApiId": "9c042c64-21b5-414b-9ef8-642404815827",
+				"name": "Health",
+				"apiId": "defe57b7-a531-4c4f-b54b-d2bbcf3ed855",
+				"apiMethodId": "0e62a969-9d98-4356-9689-ad853db1d897",
+				"summary": "check for current availibility",
+				"descriptionType": "original",
+				"descriptionManual": null,
+				"descriptionMarkdown": null,
+				"descriptionUrl": null,
+				"tags": {},
+				"op": "API-Manager-Health-Check-1.0:GET:/health:Health"
+			}
+		],
+		"backendMethods": [],
+		"imagedata": {}
+	},
+	"backend": {
+		"apiBlobs": [{
+				"id": "defe57b7-a531-4c4f-b54b-d2bbcf3ed855",
+				"type": "swagger11ex",
+				"blob": "{\"id\":\"defe57b7-a531-4c4f-b54b-d2bbcf3ed855\",\"description\":\"health check on all essential API-Manager components to verify the current availability state of a given API gateway.\",\"apiVersion\":\"1.0\",\"swaggerVersion\":\"1.1\",\"basePath\":\"http://localhost:88/healthcheck\",\"resourcePath\":\"/platform\",\"models\":{\"status\":{\"type\":\"string\",\"example\":\"OK\"}},\"consumes\":[],\"produces\":[],\"name\":\"API-Manager-Health-Check\",\"summary\":\"health check on all essential API-Manager components\",\"cors\":false,\"expired\":false,\"deprecated\":false,\"retirementDate\":0,\"retired\":false,\"tags\":{},\"apis\":[{\"path\":\"/health\",\"operations\":[{\"id\":\"0e62a969-9d98-4356-9689-ad853db1d897\",\"httpMethod\":\"GET\",\"nickname\":\"Health\",\"summary\":\"check for current availibility\",\"notes\":\"\",\"responseClass\":\"status\",\"errorResponses\":[{\"code\":200,\"reason\":\"OK\",\"schema\":{\"$ref\":\"#/definitions/status\"}},{\"code\":500,\"reason\":\"Internal Server Error\"},{\"code\":503,\"reason\":\"Service Unavailable\"}],\"consumes\":[],\"produces\":[\"application/xml\"],\"tags\":{},\"cors\":false,\"parameters\":[]}]}],\"type\":\"rest\"}",
+				"name": "API-Manager-Health-Check",
+				"importURL": null
+			}
+		]
+	},
+	"exportVersion": 2
+}

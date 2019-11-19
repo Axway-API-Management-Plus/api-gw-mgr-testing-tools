@@ -1,0 +1,65 @@
+{
+  "swagger" : "2.0",
+  "host" : "apim.test.de:8065",
+  "basePath" : "/platform",
+  "schemes" : [ "https" ],
+  "paths" : {
+    "/health" : {
+      "get" : {
+        "description" : "",
+        "operationId" : "Health",
+        "summary" : "check for current availibility",
+        "produces" : [ "application/xml" ],
+        "responses" : {
+          "200" : {
+            "description" : "OK",
+            "schema" : {
+              "$ref" : "#/definitions/status"
+            }
+          },
+          "500" : {
+            "description" : "Internal Server Error"
+          },
+          "503" : {
+            "description" : "Service Unavailable"
+          }
+        }
+      }
+    }
+  },
+  "definitions" : {
+    "status" : {
+      "example" : "OK",
+      "type" : "string"
+    }
+  },
+  "securityDefinitions" : {
+    "HTTP Basic" : {
+      "type" : "basic",
+      "description" : "HTTP Basic",
+      "xrealm" : "apimanager"
+    }
+  },
+  "security" : [ {
+    "HTTP Basic" : [ ]
+  } ],
+  "info" : {
+    "title" : "API-Manager-Health-Check",
+    "description" : "health check on all essential API-Manager components to verify the current availability state of a given API gateway.",
+    "version" : "1.0",
+    "x-summary" : "health check on all essential API-Manager components"
+  },
+  "x-axway" : {
+    "corsEnabled" : true,
+    "basePaths" : [ "" ],
+    "serviceType" : "rest",
+    "deprecated" : false,
+    "tags" : { },
+    "availableSDK" : {
+      "ios-swift" : "/discovery/sdk/9c042c64-21b5-414b-9ef8-642404815827/ios-swift",
+      "titanium" : "/discovery/sdk/9c042c64-21b5-414b-9ef8-642404815827/titanium",
+      "android" : "/discovery/sdk/9c042c64-21b5-414b-9ef8-642404815827/android",
+      "nodejs" : "/discovery/sdk/9c042c64-21b5-414b-9ef8-642404815827/nodejs"
+    }
+  }
+}
