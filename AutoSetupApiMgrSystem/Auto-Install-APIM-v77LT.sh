@@ -1,9 +1,10 @@
 # ===============================================================================
 # AXWAY API-Management
-# All-on-one Demo System Component Installation on a visrtaul server (non docker)
+# All-on-one Demo System Component Installation on a virtual server (non docker)
+# -> adopted to v7.7.LT as installer behaviours was slightly changed
 # ===============================================================================
 # Author:  R. Kiessling, Axway GmbH
-# Changed: 26.02.2020
+# Changed: 10.08.2020
 
 # CLI Parameters
 
@@ -48,7 +49,7 @@ externalJRE=/usr/lib/jvm/jre-1.8.0-openjdk
 # installation will be within /opt/axwway/<version>
 # for easy handling as symbolic link "current" should be created to the currently used product version
 installSourceDir=/opt/axway/installer/${apimVersion}
-licenseSourceDir=/opt/axway/installer/${apimVersion}/lic
+licenseSourceDir=/opt/axway/licenses
 installTargetDir=/opt/axway/axway-${apimVersion}
 
 # ADMIN-NODE-MANAGER
@@ -68,7 +69,7 @@ apigwMgrServicesPort=8080
 apigwMgrManagementPort=8085
 
 # API-MANAGER
-apimDefaultOrg="Guest"
+apimDefaultOrg="Community"
 apimAdminUserName="apiadmin"
 apimAdminUserPass="tosave4me"
 apimDefaultEmail="admin@apimtest.dns.de"
@@ -102,7 +103,7 @@ if [ -d ${installSourceDir} ]; then
   printf "DEBUG: "
   pwd
   find . -name APIGateway_${apimVersion}*_Install_linux*.run
-  axwayInstaller=$( find . -name APIGateway_${apimVersion:0:3}*_Install_linux*.run )
+  axwayInstaller=$( find . -name APIGateway_${apimVersion}*_Install_linux*.run )
   printf "INFO: Axway Installer=${axwayInstaller}\n"
 
   if [ "X${axwayInstaller}" = "X" ] || [ ! -f "${axwayInstaller}" ]; then
@@ -113,13 +114,17 @@ if [ -d ${installSourceDir} ]; then
   fi
 fi
 
-# check for Axway product license
+# check for Axway product license file
 if [ -d ${licenseSourceDir} ]; then
   licenseFile=$( find ${licenseSourceDir} -name "API*${apimVersion:0:3}*.lic" -print0 | xargs -0 grep -l "nondocker" )
-  if [ -z "$licenseFile" ]; then
-    printf "ERROR: No Axway API-Management Platform license for ${apimVersion} found at ${licenseSourceDir}"
+  printf "DEBUG: looking for Axway API-Management Platform license ${licenseFile}\n"
+  if [ ! -f "$licenseFile" ]; then
+    printf "ERROR: Axway API-Management Platform license file for ${apimVersion} found at ${licenseSourceDir} (expecting $licenseFile)\n"
     exit 1
   fi
+else
+  printf "ERROR: no Axway licenses available (no directory to copy from)"
+  exit 1
 fi
 
 # Stop all running API-Management processes
@@ -141,7 +146,6 @@ if [ ! -d ${externalJRE} ]; then
 fi
 
 # since 7.7.0 the apitester is not included anymore!
-# apigateway,nodemanager,apimgmt,qstart,analytics,policystudio,apitester,configurationstudio,packagedeploytools"
 ${axwayInstaller} \
 --mode unattended \
 --setup_type advanced \
@@ -183,6 +187,7 @@ ${axwayInstaller} \
 # ======================================
 
 # Verify binary installation
+printf "INFO: Installed version info from managedomain command\n"
 ${installTargetDir}/apigateway/posix/bin/managedomain -v
 # should produce something like that:
 # Version:    7.6.2
@@ -233,19 +238,14 @@ curl -k -s \
 
 printf "* changing admin user password now\n"
 # here is the request according to API Gateway REST API v1.0 documentation
-#curl -k \
-#--user "${anmAdminUser}:${anmAdminOotbPassword}" \
-#--url https://${anmHost}:${anmPort}/api/adminusers/users/password \
-#--data-urlencode "newPassword=${anmAdminPassword}"
-
-# and this is the working request spoofed from API-Gateway Manager UI
+# (working request spoofed from API-Gateway Manager UI)
 httpStatusCode=$( curl \
 -k -s -o /dev/null -w "%{http_code}" \
 --user "${anmAdminUser}:${anmAdminOotbPassword}" \
 --url https://${anmHost}:${anmPort}/api/adminusers/users/password \
---header "Content-Type: application/json" \
---request PUT \
---data "${anmAdminPassword}" )
+--header "Content-Type: application/x-www-form-urlencoded" \
+--request POST \
+--data "oldPassword=${anmAdminOotbPassword}&newPassword=${anmAdminPassword}" )
 
 if [ "$httpStatusCode" -ne "204" ]; then
   printf '%s\n' "ERROR: Changing password for user ${anmAdminUser} failed."
@@ -449,11 +449,11 @@ printf "STEP 13: Copy binary JDBC driver files into Node-Manager or API-Gateway 
 cp /opt/axway/installer/mysql-addon/mysql-connector-java-*-bin.jar /opt/axway/axway-7.6.2/apigateway/ext/lib
 #cp ${installSourceDir}/../mysql-addon/mysql-connector-java-*-bin.jar "${installTargetDir}/apigateway/ext/lib"
 
-# STEP 2) Prepare Maria DB Server
+# STEP 2) Prepare Maria DB Server for API Metrics data collection
 mysql -u root -p
 
 mysql> status
-mysql> show database;
+mysql> show databases;
 mysql> drop database reports;
 mysql> CREATE DATABASE reports;
 mysql> CREATE USER 'apimetrics'@'localhost' IDENTIFIED BY 'apimetrics';
@@ -461,7 +461,7 @@ mysql> GRANT ALL PRIVILEGES ON reports . * TO 'apimetrics'@'localhost';
 mysql> FLUSH PRIVILEGES;
 mysql> select user, password, host from mysql.user;
 
-# STEP 3) Create database for API metrics data
+# STEP 3) Configure database for API metrics data
 printf "STEP 14: Create database for API metrics data\n"
 cd /opt/axway/current/apigateway/posix/bin
 
